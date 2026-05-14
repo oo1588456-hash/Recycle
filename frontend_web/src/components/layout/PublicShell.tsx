@@ -26,7 +26,10 @@ const navPublic = [
 
 export function AnnouncementBar() {
   return (
-    <div className="bg-recycle-primary-dark py-2 text-center text-xs font-medium text-white sm:text-sm">
+    <div
+      className="bg-recycle-primary-dark py-2 text-center text-xs font-medium text-white sm:text-sm"
+      suppressHydrationWarning
+    >
       Recycle smarter. Buy trusted second-hand products with AI-assisted fair pricing.
     </div>
   );

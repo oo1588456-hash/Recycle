@@ -2,14 +2,21 @@
 
 ## Overview
 
-Listing evaluation is driven by **Google Gemini** (vision + text) from the Django backend only. The Flutter app never sees `GEMINI_API_KEY`. If Gemini is disabled, the key is missing, or the response is invalid, a **local depreciation fallback** produces GBP min/avg/max prices (using `DEFAULT_CURRENCY`) and a fixed explanation string.
+Listing evaluation uses **cloud multimodal JSON** from the Django backend only (keys never ship to Flutter or the browser). The stack matches the dissertation’s “GPT-style cloud reasoning” path while staying pragmatic on hosting:
 
-## Gemini integration
+1. **OpenAI** (optional): Chat Completions with `response_format: json_object` and optional vision (`gpt-4o`, `gpt-4o-mini`, etc.) when `OPENAI_API_KEY` is set. Implemented in `apps/ai_engine/services/openai_service.py`.
+2. **Google Gemini** (optional): REST `generateContent` when `GEMINI_API_KEY` is set and OpenAI did not return valid JSON. See `gemini_service.py`.
+3. **Local depreciation fallback** if both are disabled, keys are missing, or the response is invalid.
 
-- **Service:** `apps/ai_engine/services/gemini_service.py` — REST `generateContent` with optional primary/first listing image.
+Priority: **OpenAI first** (when enabled and keyed), then **Gemini**, then fallback. Configure with `USE_OPENAI_AI`, `USE_GEMINI_AI`, and keys in `.env`.
+
+The Flutter app never sees provider API keys.
+
+## Prompt, parsing, orchestration
+
 - **Prompt:** `prompt_builder.build_analysis_prompt` — strict JSON contract, marketplace currency from `DEFAULT_CURRENCY`, second-hand marketplace context.
-- **Parsing:** `response_parser.parse_gemini_json` — strips markdown fences, validates fields, clamps scores, ensures positive prices.
-- **Orchestration:** `price_analysis_service.analyze_listing` — loads `data/price_baseline.csv` snippet for similar rows, calls Gemini, persists `AIAnalysisResult`, updates `ProductListing` AI fields.
+- **Parsing:** `response_parser.parse_gemini_json` — strips markdown fences, validates fields, clamps scores, ensures positive prices (same schema for OpenAI and Gemini outputs).
+- **Orchestration:** `price_analysis_service.analyze_listing` — loads `data/price_baseline.csv` snippet for similar rows, calls OpenAI and/or Gemini, persists `AIAnalysisResult`, updates `ProductListing` AI fields. The `gemini_model_name` column stores either a Gemini model id or a trace string such as `openai:gpt-4o-mini`.
 
 ## JSON response format (model output)
 
@@ -26,14 +33,14 @@ Expected keys (aligned with parser):
 
 ## Fallback price engine
 
-When Gemini cannot be used:
+When cloud models cannot be used:
 
 - **Condition factor** from seller-declared condition: excellent 0.85, good 0.70, fair 0.50, poor 0.30.
 - **Age factor** by bucket (0–6, 7–12, 13–24, 25–36, 36+ months).
 - **Usage penalty** capped on `usage_duration_months`.
 - **Average:** `original_price * condition_factor * age_factor * (1 - usage_penalty)` (floored to a small positive value).
 - **Range:** `min = avg * 0.85`, `max = avg * 1.15`.
-- **Explanation:** *"Gemini was unavailable, so the system used local depreciation-based pricing."*
+- **Explanation:** notes that cloud reasoning was unavailable and local depreciation-based pricing was used.
 
 ## Dataset baseline usage
 
@@ -43,12 +50,12 @@ When Gemini cannot be used:
 
 ## Limitations
 
-- Gemini quality depends on prompt adherence and image quality.
+- Cloud model quality depends on prompt adherence and image quality.
 - Baseline matching is token overlap on a CSV sample, not a full market engine.
-- No on-device TFLite model in v1.
+- **No on-device TFLite model in v1** (thesis may describe this as a future or parallel track).
 
 ## Future work
 
-- On-device **TFLite** classifiers for category/condition to combine with Gemini scores.
+- On-device **TFLite** classifiers for category/condition to combine with cloud scores.
 - Embedding index for “similar sold items” and richer comparables.
 - Fine-tuned small models on marketplace data where licensing allows.

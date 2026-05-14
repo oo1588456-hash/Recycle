@@ -10,6 +10,17 @@ export function unwrapList<T>(data: unknown): T[] {
 export function mediaUrl(path: string | null | undefined): string | null {
   if (!path) return null;
   if (path.startsWith("http")) return path;
-  const base = process.env.NEXT_PUBLIC_MEDIA_ORIGIN || "http://localhost:8005";
-  return `${base.replace(/\/$/, "")}${path.startsWith("/") ? path : `/${path}`}`;
+  const rel = path.startsWith("/") ? path : `/${path}`;
+  const envMedia = process.env.NEXT_PUBLIC_MEDIA_ORIGIN?.replace(/\/$/, "");
+  if (envMedia) return `${envMedia}${rel}`;
+  if (typeof window !== "undefined") {
+    return `${window.location.origin}${rel}`;
+  }
+  const internalBase =
+    process.env.INTERNAL_MEDIA_ORIGIN?.replace(/\/$/, "") ||
+    (process.env.INTERNAL_API_URL || "http://127.0.0.1:8005/api/v1")
+      .replace(/\/api\/v1\/?$/, "")
+      .replace(/\/$/, "") ||
+    "http://127.0.0.1:8005";
+  return `${internalBase}${rel}`;
 }

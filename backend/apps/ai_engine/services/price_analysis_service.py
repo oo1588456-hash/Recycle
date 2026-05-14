@@ -1,4 +1,4 @@
-"""Orchestrate Gemini + baseline summary + local fallback for a listing."""
+"""Orchestrate cloud vision LLMs (OpenAI, then Gemini) + baseline + local fallback."""
 from __future__ import annotations
 
 import re
@@ -11,7 +11,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from apps.ai_engine.models import AIAnalysisResult
-from apps.ai_engine.services import gemini_service, prompt_builder, response_parser
+from apps.ai_engine.services import gemini_service, openai_service, prompt_builder, response_parser
 from apps.products.models import ProductListing
 
 
@@ -85,7 +85,7 @@ def _fallback(product: ProductListing) -> dict[str, Any]:
         "suggested_price_max": mx,
         "currency": getattr(settings, "DEFAULT_CURRENCY", "GBP"),
         "confidence_score": 40,
-        "explanation": "Gemini was unavailable, so the system used local depreciation-based pricing.",
+        "explanation": "Cloud reasoning (OpenAI / Gemini) was unavailable, so the system used local depreciation-based pricing.",
         "price_factors": ["declared_condition", "age_bucket", "usage_penalty"],
         "warnings": ["Local fallback used."],
     }
@@ -94,28 +94,42 @@ def _fallback(product: ProductListing) -> dict[str, Any]:
 def analyze_listing(*, product: ProductListing, seller, image_path: Path | None = None) -> dict[str, Any]:
     summary = _baseline_summary(product)
     prompt = prompt_builder.build_analysis_prompt(product, summary)
-    model_name = getattr(settings, "GEMINI_MODEL", "gemini-2.0-flash")
+    gemini_model = getattr(settings, "GEMINI_MODEL", "gemini-2.0-flash")
+    openai_model = getattr(settings, "OPENAI_MODEL", "gpt-4o-mini")
+    model_name = gemini_model
 
     parsed: dict[str, Any] | None = None
     raw: dict[str, Any] = {}
     latency = 0
-    gemini_text: str | None = None
+    cloud_text: str | None = None
     success = True
     err_msg = ""
+    used_openai = False
 
-    if getattr(settings, "USE_GEMINI_AI", True) and (settings.GEMINI_API_KEY or ""):
-        img = image_path
-        if img is None:
-            prim = product.images.filter(is_primary=True).first() or product.images.first()
-            if prim:
-                img = Path(prim.image.path) if prim.image else None
-        gemini_text, raw, latency = gemini_service.generate_content(prompt, img, model=model_name)
-        if gemini_text:
-            parsed = response_parser.parse_gemini_json(gemini_text)
+    img = image_path
+    if img is None:
+        prim = product.images.filter(is_primary=True).first() or product.images.first()
+        if prim and prim.image:
+            img = Path(prim.image.path)
+
+    if getattr(settings, "USE_OPENAI_AI", False) and (getattr(settings, "OPENAI_API_KEY", "") or ""):
+        cloud_text, raw, latency = openai_service.generate_content(prompt, img, model=openai_model)
+        if cloud_text:
+            parsed = response_parser.parse_gemini_json(cloud_text)
+            if parsed is not None:
+                used_openai = True
+                model_name = f"openai:{openai_model}"
+
+    if parsed is None and getattr(settings, "USE_GEMINI_AI", True) and (settings.GEMINI_API_KEY or ""):
+        cloud_text, raw, latency = gemini_service.generate_content(prompt, img, model=gemini_model)
+        if cloud_text:
+            parsed = response_parser.parse_gemini_json(cloud_text)
+            if parsed is not None:
+                model_name = gemini_model
 
     if parsed is None:
         success = False
-        err_msg = "Gemini failed or returned invalid JSON; using fallback."
+        err_msg = "Cloud AI failed or returned invalid JSON; using fallback."
         parsed = _fallback(product)
 
     rec = AIAnalysisResult.objects.create(
@@ -172,5 +186,7 @@ def analyze_listing(*, product: ProductListing, seller, image_path: Path | None 
         "warnings": parsed.get("warnings", []),
         "latency_ms": latency,
         "analysis_id": rec.id,
-        "used_gemini": success and bool(gemini_text),
+        "used_openai": used_openai,
+        "used_gemini": success and bool(cloud_text) and not used_openai,
+        "used_cloud_ai": success and bool(cloud_text),
     }

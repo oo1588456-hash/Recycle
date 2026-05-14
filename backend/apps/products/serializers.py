@@ -73,6 +73,8 @@ class ProductPublicSerializer(serializers.ModelSerializer):
 
 
 class SellerProductSerializer(serializers.ModelSerializer):
+    images = ProductImageSerializer(many=True, read_only=True)
+
     class Meta:
         model = ProductListing
         fields = (
@@ -101,10 +103,11 @@ class SellerProductSerializer(serializers.ModelSerializer):
             "stock_quantity",
             "location",
             "is_featured",
+            "images",
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("id", "seller", "created_at", "updated_at")
+        read_only_fields = ("id", "seller", "images", "created_at", "updated_at")
 
     def create(self, validated_data):
         validated_data["seller"] = self.context["request"].user

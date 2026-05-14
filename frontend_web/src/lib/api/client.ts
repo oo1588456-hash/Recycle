@@ -2,10 +2,9 @@
 
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { useAuthStore } from "@/lib/auth/auth-store";
+import { getBrowserApiBase } from "@/lib/api/base-url";
 
-const baseURL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
-  "http://localhost:8005/api/v1";
+const baseURL = getBrowserApiBase();
 
 export const api = axios.create({
   baseURL,
@@ -16,6 +15,9 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = useAuthStore.getState().access;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  if (config.data instanceof FormData) {
+    delete config.headers["Content-Type"];
   }
   return config;
 });

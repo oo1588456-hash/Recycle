@@ -108,6 +108,15 @@ DEFAULT_CURRENCY = os.environ.get("DEFAULT_CURRENCY", "GBP")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 USE_GEMINI_AI = os.environ.get("USE_GEMINI_AI", "True").lower() in ("1", "true", "yes")
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+# OpenAI (optional): dissertation / report alignment — vision + JSON alongside Gemini.
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+USE_OPENAI_AI = os.environ.get("USE_OPENAI_AI", "False").lower() in ("1", "true", "yes")
+OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+# Prefer OpenAI when both keys exist unless explicitly disabled.
+if OPENAI_API_KEY and os.environ.get("USE_OPENAI_AI", "").strip() == "":
+    USE_OPENAI_AI = True
+elif not OPENAI_API_KEY:
+    USE_OPENAI_AI = False
 FILE_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024
 

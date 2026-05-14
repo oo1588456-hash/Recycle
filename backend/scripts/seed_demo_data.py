@@ -14,7 +14,7 @@ django.setup()
 
 from django.utils.text import slugify  # noqa: E402
 
-from apps.products.models import Category  # noqa: E402
+from apps.categories.models import Category  # noqa: E402
 
 DEFAULT_CATEGORIES = [
     "Electronics",

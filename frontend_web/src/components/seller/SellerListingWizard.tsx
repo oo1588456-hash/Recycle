@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { isAxiosError } from "axios";
 import { api } from "@/lib/api/client";
 import { STORE_CURRENCY } from "@/lib/storeCurrency";
-import { unwrapList } from "@/lib/unwrap";
+import { mediaUrl, unwrapList } from "@/lib/unwrap";
 import type { Category } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { AppButton } from "@/components/ui/AppButton";
@@ -39,6 +39,7 @@ export function SellerListingWizard({ productId }: { productId?: number }) {
   const [ram, setRam] = useState("");
   const [battery, setBattery] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [existingPrimaryUrl, setExistingPrimaryUrl] = useState<string | null>(null);
   const [customPrice, setCustomPrice] = useState("");
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -85,6 +86,9 @@ export function SellerListingWizard({ productId }: { productId?: number }) {
       setStorage(String(p.storage ?? ""));
       setRam(String(p.ram ?? ""));
       setBattery(String(p.battery_health ?? ""));
+      const imgs = (p.images as { image: string; is_primary?: boolean }[] | undefined) ?? [];
+      const primary = imgs.find((i) => i.is_primary) ?? imgs[0];
+      setExistingPrimaryUrl(primary?.image ? mediaUrl(primary.image) : null);
     });
   }, [productId]);
 
@@ -131,6 +135,14 @@ export function SellerListingWizard({ productId }: { productId?: number }) {
       // Do not set Content-Type manually: multipart needs a boundary; the browser sets it for FormData.
       await api.post(`/seller/products/${pid}/upload-image/`, fd);
       setFile(null);
+      setExistingPrimaryUrl(null);
+      if (productId) {
+        const r2 = await api.get(`/seller/products/${productId}/`);
+        const p2 = r2.data as Record<string, unknown>;
+        const imgs = (p2.images as { image: string; is_primary?: boolean }[] | undefined) ?? [];
+        const primary = imgs.find((i) => i.is_primary) ?? imgs[0];
+        setExistingPrimaryUrl(primary?.image ? mediaUrl(primary.image) : null);
+      }
     } catch (e: unknown) {
       let msg = "Could not upload image.";
       if (isAxiosError(e)) {
@@ -259,6 +271,13 @@ export function SellerListingWizard({ productId }: { productId?: number }) {
           <AppInput label="Battery health" value={battery} onChange={(e) => setBattery(e.target.value)} />
           <div>
             <label className="mb-1.5 block text-sm font-medium">Primary photo</label>
+            {existingPrimaryUrl && (
+              <p className="mb-2 text-xs text-recycle-muted">
+                Current primary:{" "}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={existingPrimaryUrl} alt="" className="mt-1 max-h-40 rounded-lg border object-contain" />
+              </p>
+            )}
             <input
               type="file"
               accept="image/*"
@@ -284,7 +303,8 @@ export function SellerListingWizard({ productId }: { productId?: number }) {
       {step === 3 && (
         <Card className="mt-6 space-y-4 p-6">
           <p className="text-sm text-recycle-muted">
-            Analysing your product details with Gemini AI… (falls back locally if the key is not configured.)
+            Cloud reasoning uses OpenAI when an API key is configured, otherwise Google Gemini, then a local rule-based
+            fallback if neither API is available.
           </p>
           <AppButton onClick={() => void runAi()} disabled={busy || !pid}>
             Get AI price suggestion

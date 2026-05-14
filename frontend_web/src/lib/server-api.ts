@@ -1,9 +1,8 @@
+import { getServerApiBase } from "@/lib/api/base-url";
 import { unwrapList } from "@/lib/unwrap";
 import type { Category, Product } from "@/lib/types";
 
-const API =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
-  "http://localhost:8005/api/v1";
+const API = getServerApiBase();
 
 async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(`${API}${path}`, { next: { revalidate: 60 } });
