@@ -1,0 +1,40 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls %}
+
+{# Object tools must stay outside the main <form>; mirror default tools then add seller actions. #}
+{% block object-tools %}
+{% if change and not is_popup %}
+  <ul class="object-tools">
+    <li>
+      {% url opts|admin_urlname:'history' original.pk|admin_urlquote as history_url %}
+      <a href="{% add_preserved_filters history_url %}" class="historylink">{% translate "History" %}</a>
+    </li>
+    {% if has_absolute_url %}
+    <li><a href="{{ absolute_url }}" class="viewsitelink">{% translate "View on site" %}</a></li>
+    {% endif %}
+    {% if show_seller_status_tools %}
+    <li class="recycle-seller-tool-item">
+      <form method="post" action="{{ seller_status_action_url }}" class="recycle-seller-tool-form">
+        {% csrf_token %}
+        <input type="hidden" name="seller_account_status" value="approved" />
+        <button type="submit" class="button default">{% translate "Approve seller" %}</button>
+      </form>
+    </li>
+    <li class="recycle-seller-tool-item">
+      <form method="post" action="{{ seller_status_action_url }}" class="recycle-seller-tool-form">
+        {% csrf_token %}
+        <input type="hidden" name="seller_account_status" value="rejected" />
+        <button type="submit" class="button">{% translate "Reject seller" %}</button>
+      </form>
+    </li>
+    <li class="recycle-seller-tool-item">
+      <form method="post" action="{{ seller_status_action_url }}" class="recycle-seller-tool-form">
+        {% csrf_token %}
+        <input type="hidden" name="seller_account_status" value="pending" />
+        <button type="submit" class="button">{% translate "Set pending review" %}</button>
+      </form>
+    </li>
+    {% endif %}
+  </ul>
+{% endif %}
+{% endblock %}

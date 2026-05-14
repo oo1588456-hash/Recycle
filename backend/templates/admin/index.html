@@ -1,0 +1,72 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static log %}
+
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static "admin/css/dashboard.css" %}">{% endblock %}
+
+{% block coltype %}colMS{% endblock %}
+
+{% block bodyclass %}{{ block.super }} dashboard{% endblock %}
+
+{% block nav-breadcrumbs %}{% endblock %}
+
+{% block nav-sidebar %}{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <div class="module recycle-admin-home-spotlight">
+    <h2>{% translate "Seller approvals" %}</h2>
+    <p>
+      {% blocktranslate trimmed %}
+        New sellers register as <strong>pending</strong> until you set their
+        <strong>seller account status</strong> to <strong>approved</strong> on the user record
+        (or use the bulk actions on the user list).
+      {% endblocktranslate %}
+    </p>
+    <p class="recycle-admin-home-actions">
+      <a
+        href="{% url 'admin:accounts_user_changelist' %}?role__exact=seller&seller_account_status__exact=pending"
+        class="button default"
+      >{% translate "Open pending sellers queue" %}</a>
+      <a href="{% url 'admin:accounts_user_changelist' %}" class="button">{% translate "All users" %}</a>
+    </p>
+    <p class="help">
+      {% blocktranslate trimmed %}
+        Tip: from the home page below, go to <strong>Accounts → Users → Change</strong> to open the full list.
+      {% endblocktranslate %}
+    </p>
+  </div>
+  {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
+</div>
+{% endblock %}
+
+{% block sidebar %}
+<div id="content-related">
+    <div class="module" id="recent-actions-module">
+        <h2>{% translate 'Recent actions' %}</h2>
+        <h3>{% translate 'My actions' %}</h3>
+            {% get_admin_log 10 as admin_log for_user user %}
+            {% if not admin_log %}
+            <p>{% translate 'None available' %}</p>
+            {% else %}
+            <ul class="actionlist">
+            {% for entry in admin_log %}
+            <li class="{% if entry.is_addition %}addlink{% endif %}{% if entry.is_change %}changelink{% endif %}{% if entry.is_deletion %}deletelink{% endif %}">
+                <span class="visually-hidden">{% if entry.is_addition %}{% translate 'Added:' %}{% elif entry.is_change %}{% translate 'Changed:' %}{% elif entry.is_deletion %}{% translate 'Deleted:' %}{% endif %}</span>
+                {% if entry.is_deletion or not entry.get_admin_url %}
+                    {{ entry.object_repr }}
+                {% else %}
+                    <a href="{{ entry.get_admin_url }}">{{ entry.object_repr }}</a>
+                {% endif %}
+                <br>
+                {% if entry.content_type %}
+                    <span class="mini quiet">{% filter capfirst %}{{ entry.content_type.name }}{% endfilter %}</span>
+                {% else %}
+                    <span class="mini quiet">{% translate 'Unknown content' %}</span>
+                {% endif %}
+            </li>
+            {% endfor %}
+            </ul>
+            {% endif %}
+    </div>
+</div>
+{% endblock %}

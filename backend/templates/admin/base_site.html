@@ -1,0 +1,35 @@
+{% extends "admin/base.html" %}
+{% load i18n static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | ReCycle{% endblock %}
+
+{% block branding %}
+<div id="site-name" class="recycle-admin-site-name">
+  <a href="{% url 'admin:index' %}" class="recycle-admin-site-link" title="{% translate 'Home' %}">
+    <span class="recycle-admin-site-mark" aria-hidden="true">R</span>
+    <span class="recycle-admin-site-word">ReCycle</span>
+    <span class="recycle-admin-site-sub">{% translate "Staff" %}</span>
+  </a>
+  {% if user.is_anonymous %}
+    {% include "admin/color_theme_toggle.html" %}
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'admin/css/recycle_admin.css' %}">
+{% endblock %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <meta name="theme-color" content="#042f2e">
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  >
+{% endblock %}

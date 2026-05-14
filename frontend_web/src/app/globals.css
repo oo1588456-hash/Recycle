@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --recycle-primary: #15803d;
+  --recycle-primary-dark: #166534;
+  --recycle-mint: #dcfce7;
+  --recycle-charcoal: #111827;
+  --recycle-muted: #6b7280;
+  --recycle-bg: #f9fafb;
+  --recycle-border: #e5e7eb;
+  --recycle-warning: #f59e0b;
+  --recycle-error: #dc2626;
+  --recycle-success: #16a34a;
+}
+
+body {
+  @apply bg-[var(--recycle-bg)] text-[var(--recycle-charcoal)] antialiased;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* subtle card lift */
+.recycle-card {
+  @apply rounded-2xl border border-[var(--recycle-border)] bg-white shadow-sm transition-shadow duration-200 hover:shadow-md;
+}

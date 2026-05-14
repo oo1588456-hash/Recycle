@@ -1,0 +1,926 @@
+/**
+ * ReCycle — Django admin visual refresh (loads after Django base + dark_mode).
+ * Uses Django’s CSS variables where possible so links, filters, and buttons stay cohesive.
+ */
+
+/* Brand tokens (used by our custom rules; safe on :root for all themes) */
+:root {
+  --recycle-admin-accent: #0d9488;
+  --recycle-admin-accent-bright: #14b8a6;
+  --recycle-admin-accent-dark: #0f766e;
+  --recycle-admin-accent-deep: #115e59;
+  --recycle-admin-accent-soft: rgba(20, 184, 166, 0.18);
+  --recycle-admin-accent-faint: #f0fdfa;
+  --recycle-admin-surface: #f4fbfb;
+  --recycle-admin-header: #042f2e;
+  --recycle-admin-header-mid: #134e4a;
+  --recycle-admin-header-border: rgba(255, 255, 255, 0.1);
+  --recycle-admin-radius: 12px;
+  --recycle-admin-radius-sm: 8px;
+  --recycle-admin-shadow: 0 4px 24px -4px rgba(15, 23, 42, 0.1);
+  --recycle-admin-shadow-strong: 0 12px 40px -12px rgba(4, 47, 46, 0.25);
+}
+
+/* Light UI — explicit light theme */
+html[data-theme="light"] {
+  --primary: #99f6e4;
+  --primary-fg: #042f2e;
+  --secondary: #0f766e;
+  --accent: #2dd4bf;
+  --header-bg: var(--recycle-admin-header-mid);
+  --header-color: #ecfeff;
+  --header-branding-color: #ffffff;
+  --header-link-color: #ccfbf1;
+  --breadcrumbs-bg: #ecfdf5;
+  --breadcrumbs-fg: #475569;
+  --breadcrumbs-link-fg: #0f766e;
+  --link-fg: #0d9488;
+  --link-hover-color: #0f766e;
+  --link-selected-fg: #115e59;
+  --hairline-color: #d1fae5;
+  --border-color: #a7f3d0;
+  --body-fg: #1e293b;
+  --body-bg: #ffffff;
+  --body-quiet-color: #64748b;
+  --body-medium-color: #334155;
+  --body-loud-color: #0f172a;
+  --darkened-bg: #f0fdfa;
+  --selected-bg: #ccfbf1;
+  --selected-row: #b2f5ea;
+  --button-fg: #ffffff;
+  --button-bg: #0d9488;
+  --button-hover-bg: #0f766e;
+  --default-button-bg: #0f766e;
+  --default-button-hover-bg: #115e59;
+  --object-tools-fg: #ffffff;
+  --object-tools-bg: #64748b;
+  --object-tools-hover-bg: #475569;
+  --message-success-bg: #d1fae5;
+  --message-warning-bg: #fef3c7;
+  --message-error-bg: #fee2e2;
+}
+
+/* Light UI — theme “auto” when the OS prefers light */
+@media (prefers-color-scheme: light) {
+  html[data-theme="auto"] {
+    --primary: #99f6e4;
+    --primary-fg: #042f2e;
+    --secondary: #0f766e;
+    --accent: #2dd4bf;
+    --header-bg: var(--recycle-admin-header-mid);
+    --header-color: #ecfeff;
+    --header-branding-color: #ffffff;
+    --header-link-color: #ccfbf1;
+    --breadcrumbs-bg: #ecfdf5;
+    --breadcrumbs-fg: #475569;
+    --breadcrumbs-link-fg: #0f766e;
+    --link-fg: #0d9488;
+    --link-hover-color: #0f766e;
+    --link-selected-fg: #115e59;
+    --hairline-color: #d1fae5;
+    --border-color: #a7f3d0;
+    --body-fg: #1e293b;
+    --body-bg: #ffffff;
+    --body-quiet-color: #64748b;
+    --body-medium-color: #334155;
+    --body-loud-color: #0f172a;
+    --darkened-bg: #f0fdfa;
+    --selected-bg: #ccfbf1;
+    --selected-row: #b2f5ea;
+    --button-fg: #ffffff;
+    --button-bg: #0d9488;
+    --button-hover-bg: #0f766e;
+    --default-button-bg: #0f766e;
+    --default-button-hover-bg: #115e59;
+    --object-tools-fg: #ffffff;
+    --object-tools-bg: #64748b;
+    --object-tools-hover-bg: #475569;
+    --message-success-bg: #d1fae5;
+    --message-warning-bg: #fef3c7;
+    --message-error-bg: #fee2e2;
+  }
+}
+
+/* Dark UI — explicit dark + auto (dark OS) */
+html[data-theme="dark"] {
+  --primary: #115e59;
+  --primary-fg: #ccfbf1;
+  --secondary: #14b8a6;
+  --accent: #2dd4bf;
+  --header-bg: #042f2e;
+  --header-color: #ecfdf5;
+  --header-branding-color: #5eead4;
+  --header-link-color: #99f6e4;
+  --breadcrumbs-bg: #134e4a;
+  --breadcrumbs-fg: #ccfbf1;
+  --breadcrumbs-link-fg: #ffffff;
+  --link-fg: #5eead4;
+  --link-hover-color: #99f6e4;
+  --link-selected-fg: #2dd4bf;
+  --hairline-color: #1e3a3a;
+  --border-color: #2d4a47;
+  --body-fg: #e7f5f3;
+  --body-bg: #0c1716;
+  --body-quiet-color: #94a3a8;
+  --body-medium-color: #cbd5d1;
+  --body-loud-color: #f8fafc;
+  --darkened-bg: #111c1b;
+  --selected-bg: #134e4a;
+  --selected-row: #115e59;
+  --button-fg: #042f2e;
+  --button-bg: #2dd4bf;
+  --button-hover-bg: #5eead4;
+  --default-button-bg: #14b8a6;
+  --default-button-hover-bg: #2dd4bf;
+  --object-tools-fg: #ffffff;
+  --object-tools-bg: #475569;
+  --object-tools-hover-bg: #64748b;
+  --message-success-bg: #064e3b;
+  --message-warning-bg: #422006;
+  --message-error-bg: #450a0a;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme="auto"] {
+    --primary: #115e59;
+    --primary-fg: #ccfbf1;
+    --secondary: #14b8a6;
+    --accent: #2dd4bf;
+    --header-bg: #042f2e;
+    --header-color: #ecfdf5;
+    --header-branding-color: #5eead4;
+    --header-link-color: #99f6e4;
+    --breadcrumbs-bg: #134e4a;
+    --breadcrumbs-fg: #ccfbf1;
+    --breadcrumbs-link-fg: #ffffff;
+    --link-fg: #5eead4;
+    --link-hover-color: #99f6e4;
+    --link-selected-fg: #2dd4bf;
+    --hairline-color: #1e3a3a;
+    --border-color: #2d4a47;
+    --body-fg: #e7f5f3;
+    --body-bg: #0c1716;
+    --body-quiet-color: #94a3a8;
+    --body-medium-color: #cbd5d1;
+    --body-loud-color: #f8fafc;
+    --darkened-bg: #111c1b;
+    --selected-bg: #134e4a;
+    --selected-row: #115e59;
+    --button-fg: #042f2e;
+    --button-bg: #2dd4bf;
+    --button-hover-bg: #5eead4;
+    --default-button-bg: #14b8a6;
+    --default-button-hover-bg: #2dd4bf;
+    --object-tools-fg: #ffffff;
+    --object-tools-bg: #475569;
+    --object-tools-hover-bg: #64748b;
+    --message-success-bg: #064e3b;
+    --message-warning-bg: #422006;
+    --message-error-bg: #450a0a;
+  }
+}
+
+/* Typography */
+body {
+  font-family:
+    "Inter",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+  letter-spacing: 0.01em;
+  background: var(--recycle-admin-surface);
+}
+
+html[data-theme="dark"] body {
+  background: var(--body-bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme="auto"] body {
+    background: var(--body-bg);
+  }
+}
+
+html[data-theme="light"] body {
+  background: var(--recycle-admin-surface);
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-theme="auto"] body {
+    background: var(--recycle-admin-surface);
+  }
+}
+
+/* Header */
+#header {
+  background: linear-gradient(
+    125deg,
+    var(--recycle-admin-header) 0%,
+    var(--recycle-admin-header-mid) 42%,
+    #0f172a 100%
+  );
+  color: #e2e8f0;
+  border-bottom: 1px solid var(--recycle-admin-header-border);
+  box-shadow: var(--recycle-admin-shadow-strong);
+}
+
+#header a:link,
+#header a:visited {
+  color: #bae6fd;
+}
+
+#header a:focus,
+#header a:hover {
+  color: #ffffff;
+}
+
+#branding {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+#site-name {
+  padding: 0;
+}
+
+.recycle-admin-site-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  text-decoration: none !important;
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+  color: #fff !important;
+}
+
+.recycle-admin-site-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 10px;
+  background: linear-gradient(
+    145deg,
+    var(--recycle-admin-accent-bright) 0%,
+    var(--recycle-admin-accent-dark) 100%
+  );
+  color: #fff;
+  font-size: 1rem;
+  box-shadow: 0 2px 14px rgba(20, 184, 166, 0.55);
+}
+
+.recycle-admin-site-word {
+  color: #f8fafc;
+}
+
+.recycle-admin-site-sub {
+  margin-left: 0.35rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  background: rgba(255, 255, 255, 0.12);
+  color: #99f6e4;
+  vertical-align: middle;
+}
+
+/* User tools & theme toggle */
+#user-tools {
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+#user-tools button,
+#user-tools a.button {
+  border-radius: var(--recycle-admin-radius-sm);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+#user-tools button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #e2e8f0;
+  padding: 0.35rem 0.75rem;
+}
+
+#user-tools button:hover,
+#user-tools button:focus {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border-color: rgba(94, 234, 212, 0.35);
+}
+
+.theme-toggle {
+  border-radius: var(--recycle-admin-radius-sm) !important;
+  padding: 0.25rem !important;
+  border: 1px solid transparent;
+}
+
+.theme-toggle:hover,
+.theme-toggle:focus {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.theme-toggle svg {
+  color: #ccfbf1;
+}
+
+/* Breadcrumbs */
+.breadcrumbs {
+  background: linear-gradient(180deg, #ffffff 0%, var(--recycle-admin-accent-faint) 100%);
+  border-radius: 0 0 var(--recycle-admin-radius) var(--recycle-admin-radius);
+  margin: 0 1.5rem;
+  padding: 0.65rem 1rem !important;
+  border: 1px solid var(--border-color);
+  border-top: none;
+  font-size: 0.8125rem;
+  box-shadow: var(--recycle-admin-shadow);
+}
+
+html[data-theme="dark"] .breadcrumbs {
+  background: linear-gradient(180deg, var(--body-bg) 0%, var(--darkened-bg) 100%);
+  border-color: var(--border-color);
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme="auto"] .breadcrumbs {
+    background: linear-gradient(180deg, var(--body-bg) 0%, var(--darkened-bg) 100%);
+    border-color: var(--border-color);
+  }
+}
+
+@media (max-width: 1024px) {
+  .breadcrumbs {
+    margin: 0 0.75rem;
+  }
+}
+
+.breadcrumbs a {
+  color: var(--link-fg) !important;
+  font-weight: 600;
+}
+
+.breadcrumbs a:focus,
+.breadcrumbs a:hover {
+  color: var(--link-hover-color) !important;
+}
+
+/* Main content area */
+#content {
+  padding: 1.25rem 1.5rem 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+#content-start {
+  background: transparent;
+}
+
+h1 {
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--body-loud-color);
+}
+
+/* Module boxes (change lists, forms) */
+.module,
+.dashboard .module {
+  border-radius: var(--recycle-admin-radius);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--recycle-admin-shadow);
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+  background: var(--body-bg);
+}
+
+.module h2,
+.module caption,
+.inline-group h2 {
+  background: linear-gradient(90deg, var(--darkened-bg) 0%, var(--body-bg) 100%);
+  color: var(--body-loud-color) !important;
+  font-size: 0.8125rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--hairline-color);
+  padding: 0.75rem 1rem !important;
+}
+
+/* Changelist toolbar (search, actions) */
+#toolbar {
+  border-radius: var(--recycle-admin-radius-sm) var(--recycle-admin-radius-sm) 0 0;
+  border: 1px solid var(--hairline-color);
+  border-bottom: none;
+  background: linear-gradient(180deg, var(--darkened-bg) 0%, var(--body-bg) 100%);
+  padding: 0.65rem 0.85rem !important;
+}
+
+#toolbar #searchbar:focus {
+  border-color: var(--recycle-admin-accent) !important;
+  box-shadow: 0 0 0 2px var(--recycle-admin-accent-soft);
+}
+
+#toolbar form input[type="submit"] {
+  border-radius: var(--recycle-admin-radius-sm) !important;
+  background: var(--button-bg) !important;
+  color: var(--button-fg) !important;
+  border: 1px solid transparent !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+
+#toolbar form input[type="submit"]:hover,
+#toolbar form input[type="submit"]:focus {
+  background: var(--button-hover-bg) !important;
+}
+
+.actions {
+  padding: 0.5rem 0.75rem !important;
+  border: 1px solid var(--hairline-color);
+  border-top: none;
+  background: var(--body-bg);
+}
+
+.actions select {
+  border-radius: var(--recycle-admin-radius-sm) !important;
+}
+
+.actions .button {
+  background: var(--default-button-bg) !important;
+  color: var(--button-fg) !important;
+  border: none !important;
+}
+
+.actions .button:focus,
+.actions .button:hover {
+  background: var(--default-button-hover-bg) !important;
+}
+
+/* Filter sidebar */
+#changelist-filter {
+  flex: 0 0 260px;
+  margin: 0 0 0 1.5rem;
+  padding: 0 0 0.5rem;
+  background: var(--darkened-bg);
+  border: 1px solid var(--hairline-color);
+  border-radius: var(--recycle-admin-radius);
+  box-shadow: var(--recycle-admin-shadow);
+  overflow: hidden;
+}
+
+#changelist-filter h2 {
+  margin: 0 0 0.75rem;
+  padding: 0.85rem 1rem !important;
+  background: linear-gradient(90deg, var(--recycle-admin-accent-dark) 0%, var(--recycle-admin-accent) 100%);
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  border-bottom: none;
+}
+
+html[data-theme="dark"] #changelist-filter h2 {
+  background: linear-gradient(90deg, #0f766e 0%, #14b8a6 100%);
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme="auto"] #changelist-filter h2 {
+    background: linear-gradient(90deg, #0f766e 0%, #14b8a6 100%);
+  }
+}
+
+#changelist-filter h3,
+#changelist-filter details summary {
+  color: var(--body-medium-color);
+  font-weight: 600 !important;
+  font-size: 0.8125rem !important;
+}
+
+#changelist-filter a {
+  color: var(--body-quiet-color);
+  border-radius: 6px;
+  padding: 0.2rem 0.35rem;
+  margin: 0.1rem 0;
+}
+
+#changelist-filter a:hover,
+#changelist-filter a:focus {
+  background: var(--recycle-admin-accent-soft);
+  color: var(--link-hover-color);
+}
+
+#changelist-filter li.selected {
+  border-left: 4px solid var(--recycle-admin-accent);
+  padding-left: 0.65rem;
+  margin-left: -0.25rem;
+  background: var(--body-bg);
+  border-radius: 0 8px 8px 0;
+}
+
+#changelist-filter li.selected a {
+  color: var(--link-selected-fg);
+  font-weight: 600;
+}
+
+#changelist-filter ul {
+  border-bottom-color: var(--hairline-color) !important;
+}
+
+/* Tables */
+#result_list,
+.change-list .module table,
+.module table {
+  border-radius: 0;
+}
+
+#changelist table thead th {
+  background: var(--darkened-bg);
+  color: var(--body-medium-color);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid var(--hairline-color);
+}
+
+#changelist .row1,
+.module table tr:nth-child(odd) {
+  background: var(--body-bg);
+}
+
+#changelist .row2,
+.module table tr:nth-child(even) {
+  background: var(--darkened-bg);
+}
+
+#changelist tbody tr:hover td {
+  background: var(--recycle-admin-accent-faint) !important;
+}
+
+html[data-theme="dark"] #changelist tbody tr:hover td {
+  background: rgba(20, 184, 166, 0.12) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme="auto"] #changelist tbody tr:hover td {
+    background: rgba(20, 184, 166, 0.12) !important;
+  }
+}
+
+#changelist tbody tr.selected td {
+  background: var(--selected-row) !important;
+}
+
+/* Paginator */
+.paginator a:link,
+.paginator a:visited {
+  color: var(--link-fg);
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 0.15rem 0.45rem;
+}
+
+.paginator a:hover,
+.paginator a:focus,
+.paginator a.showall {
+  color: var(--link-hover-color);
+  background: var(--recycle-admin-accent-soft);
+}
+
+/* Buttons & submits */
+.button,
+input[type="submit"],
+input[type="button"],
+.submit-row input,
+a.button {
+  border-radius: var(--recycle-admin-radius-sm) !important;
+  font-weight: 600 !important;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    background 0.12s ease,
+    filter 0.12s ease !important;
+}
+
+input[type="submit"].default,
+.submit-row input.default {
+  background: linear-gradient(
+    180deg,
+    var(--recycle-admin-accent) 0%,
+    var(--recycle-admin-accent-dark) 100%
+  ) !important;
+  border: none !important;
+  color: #fff !important;
+  box-shadow: 0 2px 10px rgba(13, 148, 136, 0.4);
+}
+
+input[type="submit"].default:hover,
+.submit-row input.default:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 4px 16px rgba(13, 148, 136, 0.5);
+}
+
+.deletelink,
+.deletelink-box a {
+  border-radius: var(--recycle-admin-radius-sm);
+}
+
+/* Object tools */
+.object-tools a {
+  border-radius: var(--recycle-admin-radius-sm) !important;
+  font-weight: 600 !important;
+  background: var(--darkened-bg) !important;
+  color: var(--body-medium-color) !important;
+  border: 1px solid var(--hairline-color) !important;
+  padding: 0.45rem 0.85rem !important;
+}
+
+.object-tools a:hover,
+.object-tools a:focus {
+  background: var(--recycle-admin-accent-faint) !important;
+  color: var(--link-hover-color) !important;
+  border-color: var(--recycle-admin-accent) !important;
+}
+
+.object-tools a.addlink {
+  background: linear-gradient(
+    180deg,
+    var(--recycle-admin-accent) 0%,
+    var(--recycle-admin-accent-dark) 100%
+  ) !important;
+  color: #fff !important;
+  border: none !important;
+}
+
+/* Form fields */
+input:not([type]),
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="url"],
+input[type="number"],
+textarea,
+select {
+  border-radius: var(--recycle-admin-radius-sm) !important;
+  border-color: var(--border-color) !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--recycle-admin-accent) !important;
+  box-shadow: 0 0 0 3px var(--recycle-admin-accent-soft) !important;
+  outline: none !important;
+}
+
+/* Messages */
+.messagelist li {
+  border-radius: var(--recycle-admin-radius-sm);
+  border: none !important;
+  box-shadow: var(--recycle-admin-shadow);
+}
+
+/* Login page */
+body.login {
+  background:
+    radial-gradient(ellipse 100% 70% at 50% -15%, rgba(20, 184, 166, 0.22), transparent),
+    linear-gradient(180deg, var(--recycle-admin-header) 0%, var(--recycle-admin-header-mid) 38%, #e0f2f1 38%, var(--recycle-admin-surface) 100%);
+  min-height: 100vh;
+}
+
+body.login #header {
+  justify-content: center;
+  text-align: center;
+  padding: 1.25rem 1rem;
+}
+
+body.login #header #branding {
+  justify-content: center;
+}
+
+body.login #container {
+  background: transparent;
+}
+
+body.login #content {
+  padding: 2rem 1rem;
+  max-width: 28rem;
+  margin: 0 auto;
+}
+
+body.login #content-main {
+  background: var(--body-bg);
+  border-radius: 16px;
+  padding: 2rem 1.75rem 1.75rem;
+  box-shadow: var(--recycle-admin-shadow-strong);
+  border: 1px solid var(--border-color);
+}
+
+.recycle-login-intro {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.recycle-login-kicker {
+  margin: 0 0 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--recycle-admin-accent);
+}
+
+.recycle-login-heading {
+  margin: 0 0 0.5rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--body-loud-color);
+}
+
+.recycle-login-hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--body-quiet-color);
+}
+
+body.login .form-row {
+  margin-bottom: 1.1rem;
+}
+
+body.login .form-row label {
+  font-weight: 600;
+  color: var(--body-medium-color);
+  font-size: 0.8125rem;
+}
+
+body.login .submit-row {
+  padding: 0 !important;
+  margin-top: 1.5rem;
+  border: none !important;
+  background: transparent !important;
+}
+
+body.login .submit-row input {
+  width: 100%;
+  padding: 0.75rem 1rem !important;
+  font-size: 0.9375rem !important;
+}
+
+body.login .errornote {
+  border-radius: var(--recycle-admin-radius-sm);
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+html[data-theme="dark"] body.login .errornote {
+  background: var(--message-error-bg);
+  color: #fecaca;
+  border-color: #7f1d1d;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme="auto"] body.login .errornote {
+    background: var(--message-error-bg);
+    color: #fecaca;
+    border-color: #7f1d1d;
+  }
+}
+
+/* Nav sidebar */
+#nav-sidebar {
+  border-right-color: var(--hairline-color);
+  background: var(--body-bg);
+}
+
+#nav-sidebar .module {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+#nav-sidebar .module th,
+#nav-sidebar .module caption {
+  background: var(--darkened-bg);
+  color: var(--body-loud-color);
+  border-bottom: 1px solid var(--hairline-color);
+}
+
+#nav-sidebar .current-app .section:link,
+#nav-sidebar .current-app .section:visited {
+  color: var(--link-selected-fg);
+}
+
+.toggle-nav-sidebar {
+  background: var(--body-bg);
+  border-right-color: var(--hairline-color);
+  color: var(--link-fg);
+}
+
+.toggle-nav-sidebar:hover,
+.toggle-nav-sidebar:focus {
+  background: var(--darkened-bg);
+  color: var(--link-hover-color);
+}
+
+/* Dashboard / app list links */
+.dashboard .module table th {
+  width: 100%;
+}
+
+.dashboard a.addlink,
+a.addlink {
+  color: var(--link-fg) !important;
+  font-weight: 600;
+}
+
+.dashboard a.addlink:focus,
+.dashboard a.addlink:hover,
+a.addlink:focus,
+a.addlink:hover {
+  color: var(--link-hover-color) !important;
+}
+
+/* Django admin home — seller spotlight */
+.recycle-admin-home-spotlight {
+  margin-bottom: 1.5rem;
+  border-left: 4px solid var(--recycle-admin-accent);
+  background: linear-gradient(135deg, var(--recycle-admin-accent-faint) 0%, var(--body-bg) 65%);
+}
+
+html[data-theme="dark"] .recycle-admin-home-spotlight {
+  background: linear-gradient(135deg, rgba(20, 184, 166, 0.08) 0%, var(--body-bg) 65%);
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme="auto"] .recycle-admin-home-spotlight {
+    background: linear-gradient(135deg, rgba(20, 184, 166, 0.08) 0%, var(--body-bg) 65%);
+  }
+}
+
+.recycle-admin-home-spotlight h2 {
+  margin-top: 0;
+  color: var(--body-loud-color);
+}
+
+.recycle-admin-home-spotlight .help {
+  color: var(--body-quiet-color);
+}
+
+.recycle-admin-home-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1rem 0 0;
+}
+
+.recycle-admin-home-actions .button {
+  display: inline-block;
+}
+
+/* Object tools — seller approval forms (user change page) */
+.object-tools .recycle-seller-tool-item {
+  float: left;
+  margin-left: 0.5rem;
+}
+
+.object-tools .recycle-seller-tool-form {
+  display: inline-flex;
+  margin: 0;
+  padding: 0;
+  vertical-align: middle;
+}
+
+.object-tools .recycle-seller-tool-form button {
+  margin: 0;
+  padding: 0.35rem 0.75rem !important;
+  font-size: 0.75rem !important;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.object-tools .recycle-seller-tool-form .button.default {
+  font-weight: 700;
+}
+
+/* Footer */
+#footer {
+  border-top: 1px solid var(--hairline-color);
+  background: var(--body-bg);
+  color: var(--body-quiet-color);
+  font-size: 0.75rem;
+}

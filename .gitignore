@@ -1,0 +1,41 @@
+# Large local datasets (not for GitHub; keep repo cloneable)
+datasets/
+
+# Secrets & local env (never commit)
+.env
+**/.env
+**/.env.*.local
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+*.sqlite3
+
+# Django / media (local uploads)
+backend/media/
+
+# Node / Next.js
+**/node_modules/
+**/.next/
+**/out/
+**/dist/
+npm-debug.log*
+yarn-error.log*
+
+# Flutter / Dart
+**/.dart_tool/
+**/.pub/
+**/build/
+**/coverage/
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
