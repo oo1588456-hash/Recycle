@@ -7,7 +7,7 @@ This document maps your dissertation text to **what is implemented in GitHub tod
 | Thesis claim | Repository status |
 |--------------|-------------------|
 | Flutter cross‑platform client | **Yes** — `frontend/` |
-| Hybrid AI (edge vision + cloud reasoning) | **Partial** — cloud reasoning runs on **Django** (OpenAI and/or Gemini + image on server). **On‑device TFLite** is **optional**: hook + asset path exist; you must **bundle a trained `.tflite`** (see `frontend/assets/models/README.md` and `backend/ml/README.md`). **Offline** uses a **local rule‑based** estimator (same economic idea as thesis fallback, without a CNN until a model is added). |
+| Hybrid AI (edge vision + cloud reasoning) | **Partial** — **Online:** Django runs **vision + LLM** on the **uploaded** listing image (same outcome as “cloud brain”, different data path than the thesis figure where the phone sends a **pre-computed TFLite score**). **Offline / server error:** Flutter runs **optional TFLite** on the local gallery image, then **local depreciation** pricing (see `HybridAiOrchestrator`). |
 | Firebase / Firestore / Cloud Functions | **Not the primary stack** — persistence and auth are **Django + SQLite** (dev). See `docs/FIREBASE_MIGRATION.md` for how to move toward the thesis stack. |
 | FastAPI gateway | **Optional dev component** — `gateway/` is a small FastAPI service that can proxy OpenAI keys (thesis “hide keys from client” pattern). Production still uses Django as the main API. |
 | OpenAI GPT‑4o JSON reasoning | **Supported on server** — set `OPENAI_API_KEY` (+ model env). Flutter does **not** call OpenAI directly (keys stay off the device). |
