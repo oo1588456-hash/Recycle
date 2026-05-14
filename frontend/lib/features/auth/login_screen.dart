@@ -95,8 +95,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           AppTextField(controller: _pass, label: 'Password', obscure: true),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            value: _role,
             decoration: const InputDecoration(labelText: 'Role'),
+            // ignore: deprecated_member_use
+            value: _role,
             items: const [
               DropdownMenuItem(value: 'seller', child: Text('Seller')),
               DropdownMenuItem(value: 'buyer', child: Text('Buyer')),

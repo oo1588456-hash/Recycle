@@ -55,7 +55,7 @@ export default function AdminCategoriesPage() {
       const d = r.data as { created: number; updated: number };
       setSeedMsg(`Done: ${d.created} created, ${d.updated} updated.`);
       await load();
-    } catch (e: unknown) {
+    } catch {
       setSeedMsg("Could not seed categories. Are you logged in as superadmin?");
     } finally {
       setBusy(false);

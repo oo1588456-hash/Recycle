@@ -190,3 +190,131 @@ def analyze_listing(*, product: ProductListing, seller, image_path: Path | None 
         "used_gemini": success and bool(cloud_text) and not used_openai,
         "used_cloud_ai": success and bool(cloud_text),
     }
+
+
+def analyze_listing_with_device_visual(
+    *,
+    product: ProductListing,
+    seller,
+    device_condition_label: str,
+    device_condition_score: int,
+    device_model_note: str = "",
+) -> dict[str, Any]:
+    """
+    Thesis hybrid AI: edge "Eye" has already produced visual scores on the phone.
+    Cloud "Brain" (OpenAI / Gemini) receives **text only** — no listing image bytes.
+    """
+    summary = _baseline_summary(product)
+    prompt = prompt_builder.build_analysis_prompt_with_device_visual(
+        product,
+        summary,
+        device_condition_label=device_condition_label,
+        device_condition_score=device_condition_score,
+        device_model_note=device_model_note,
+    )
+    gemini_model = getattr(settings, "GEMINI_MODEL", "gemini-2.0-flash")
+    openai_model = getattr(settings, "OPENAI_MODEL", "gpt-4o")
+    model_name = gemini_model
+
+    parsed: dict[str, Any] | None = None
+    raw: dict[str, Any] = {}
+    latency = 0
+    cloud_text: str | None = None
+    success = True
+    err_msg = ""
+    used_openai = False
+
+    device_meta = {
+        "label": device_condition_label,
+        "score": device_condition_score,
+        "note": device_model_note or "edge_visual",
+    }
+
+    if getattr(settings, "USE_OPENAI_AI", False) and (getattr(settings, "OPENAI_API_KEY", "") or ""):
+        cloud_text, raw, latency = openai_service.generate_content(prompt, None, model=openai_model)
+        if cloud_text:
+            parsed = response_parser.parse_gemini_json(cloud_text)
+            if parsed is not None:
+                used_openai = True
+                model_name = f"openai:{openai_model}"
+
+    if parsed is None and getattr(settings, "USE_GEMINI_AI", True) and (settings.GEMINI_API_KEY or ""):
+        cloud_text, raw, latency = gemini_service.generate_content(prompt, None, model=gemini_model)
+        if cloud_text:
+            parsed = response_parser.parse_gemini_json(cloud_text)
+            if parsed is not None:
+                model_name = gemini_model
+
+    if parsed is None:
+        success = False
+        err_msg = "Cloud AI failed or returned invalid JSON; using fallback."
+        parsed = _fallback(product)
+
+    merged_raw: dict[str, Any]
+    if isinstance(raw, dict):
+        merged_raw = {**raw, "device_visual_input": device_meta, "thesis_path": "edge_first_text_only_cloud"}
+    else:
+        merged_raw = {"device_visual_input": device_meta, "thesis_path": "edge_first_text_only_cloud", "raw": str(raw)[:2000]}
+
+    rec = AIAnalysisResult.objects.create(
+        seller=seller,
+        product=product,
+        input_title=product.title,
+        input_description=product.description,
+        input_category=product.category.name if product.category else "",
+        input_brand=product.brand,
+        input_model_name=product.model_name,
+        input_original_price=product.original_price,
+        input_age_months=product.product_age_months,
+        input_usage_duration_months=product.usage_duration_months,
+        input_user_condition=product.user_declared_condition,
+        image_used=None,
+        gemini_model_name=model_name if success else "",
+        gemini_prompt=prompt[:50000],
+        gemini_raw_response=merged_raw,
+        predicted_condition_label=parsed["condition_label"],
+        predicted_condition_score=parsed["condition_score"],
+        suggested_price_min=parsed["suggested_price_min"],
+        suggested_price_avg=parsed["suggested_price_avg"],
+        suggested_price_max=parsed["suggested_price_max"],
+        explanation=parsed["explanation"],
+        confidence_score=parsed["confidence_score"],
+        warnings=parsed.get("warnings"),
+        latency_ms=latency or None,
+        success=success,
+        error_message=err_msg or None,
+    )
+
+    lbl = str(parsed["condition_label"])
+    allowed = {c.value for c in ProductListing.AICondition}
+    product.ai_condition_label = lbl if lbl in allowed else ProductListing.AICondition.UNKNOWN
+    product.ai_condition_score = parsed["condition_score"]
+    product.ai_suggested_price_min = parsed["suggested_price_min"]
+    product.ai_suggested_price_avg = parsed["suggested_price_avg"]
+    product.ai_suggested_price_max = parsed["suggested_price_max"]
+    product.ai_price_explanation = parsed["explanation"]
+    product.ai_confidence_score = parsed["confidence_score"]
+    product.ai_warnings = parsed.get("warnings")
+    product.is_ai_evaluated = True
+    product.ai_evaluated_at = timezone.now()
+    product.save()
+
+    return {
+        "condition_label": parsed["condition_label"],
+        "condition_score": parsed["condition_score"],
+        "suggested_price_min": float(parsed["suggested_price_min"]),
+        "suggested_price_avg": float(parsed["suggested_price_avg"]),
+        "suggested_price_max": float(parsed["suggested_price_max"]),
+        "confidence_score": parsed["confidence_score"],
+        "explanation": parsed["explanation"],
+        "warnings": parsed.get("warnings", []),
+        "latency_ms": latency,
+        "analysis_id": rec.id,
+        "used_openai": used_openai,
+        "used_gemini": success and bool(cloud_text) and not used_openai,
+        "used_cloud_ai": success and bool(cloud_text),
+        "device_condition_label": device_condition_label,
+        "device_condition_score": device_condition_score,
+        "thesis_hybrid_edge_first": True,
+        "hybrid_path": "edge_tflite_then_cloud_gpt_text_only",
+    }

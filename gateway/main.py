@@ -29,7 +29,7 @@ app = FastAPI(title="ReCycle OpenAI Gateway (optional)", version="0.1.0")
 class ChatJsonBody(BaseModel):
     """Minimal body compatible with OpenAI chat.completions + json_object."""
 
-    model: str = Field(default_factory=lambda: os.environ.get("OPENAI_MODEL", "gpt-4o-mini"))
+    model: str = Field(default_factory=lambda: os.environ.get("OPENAI_MODEL", "gpt-4o"))
     system: str = "You are a helpful assistant that replies with strict JSON only."
     user: str
 

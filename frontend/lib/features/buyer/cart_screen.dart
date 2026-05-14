@@ -62,13 +62,13 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           if (_cart != null && (_cart!['items'] as List?)?.isNotEmpty == true)
             TextButton(
               onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
                 try {
                   await ref.read(dioProvider).delete('/cart/clear/');
                   await _load();
                 } on DioException catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
-                  }
+                  if (!context.mounted) return;
+                  messenger.showSnackBar(SnackBar(content: Text('$e')));
                 }
               },
               child: const Text('Clear'),

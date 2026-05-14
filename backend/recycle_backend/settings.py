@@ -111,7 +111,8 @@ GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
 # OpenAI (optional): dissertation / report alignment — vision + JSON alongside Gemini.
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 USE_OPENAI_AI = os.environ.get("USE_OPENAI_AI", "False").lower() in ("1", "true", "yes")
-OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+# Default gpt-4o matches dissertation (Ch.3–4); override with OPENAI_MODEL for cheaper dev runs.
+OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o")
 # Prefer OpenAI when both keys exist unless explicitly disabled.
 if OPENAI_API_KEY and os.environ.get("USE_OPENAI_AI", "").strip() == "":
     USE_OPENAI_AI = True

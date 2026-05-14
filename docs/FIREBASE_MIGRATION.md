@@ -31,3 +31,37 @@ flutterfire configure
 ```
 
 Add `firebase_core`, `cloud_firestore`, `firebase_auth`, `firebase_storage` to `pubspec.yaml` and follow Firebase Flutter docs. Do not commit `google-services.json` / `GoogleService-Info.plist` secrets publicly.
+
+## What is already in this repository (thesis scaffolding)
+
+- **Repo root** `firebase.json`, `firestore.rules`, `.firebaserc`, and **`functions/`** — Cloud Callable `chatJson` proxies OpenAI with server-held keys (Ch.4.5 pattern).
+- **Flutter** `lib/core/firebase/firebase_bootstrap.dart` — optional `Firebase.initializeApp` when you pass **compile-time** `--dart-define` values (no secrets committed). If `FIREBASE_PROJECT_ID` is empty, Firebase is skipped and the app still runs on Django only.
+- **Flutter** `lib/core/firebase/ai_cache_firestore.dart` — after a successful **device-first** Django analysis, the client writes a document to **`cached_ai_results`** (Ch.3.6 cache collection).
+
+### Android `flutter run` with Firestore cache (example)
+
+Use your real values from the Firebase console (Android app):
+
+```text
+--dart-define=FIREBASE_PROJECT_ID=your-project-id
+--dart-define=FIREBASE_ANDROID_API_KEY=...
+--dart-define=FIREBASE_ANDROID_APP_ID=...
+--dart-define=FIREBASE_MESSAGING_SENDER_ID=...
+--dart-define=FIREBASE_STORAGE_BUCKET=your-project-id.appspot.com
+```
+
+iOS additionally:
+
+```text
+--dart-define=FIREBASE_IOS_API_KEY=...
+--dart-define=FIREBASE_IOS_APP_ID=...
+--dart-define=FIREBASE_IOS_BUNDLE_ID=com.example.recycleFrontend
+```
+
+Then deploy rules:
+
+```bash
+firebase deploy --only firestore:rules
+```
+
+Enable **Anonymous sign-in** in Firebase Auth so `signInAnonymously()` succeeds for the cache writer (or change rules / auth strategy for production).

@@ -66,8 +66,9 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
           AppTextField(controller: _loc, label: 'Location'),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
-            value: _cond,
             decoration: const InputDecoration(labelText: 'Declared condition'),
+            // ignore: deprecated_member_use
+            value: _cond,
             items: const [
               DropdownMenuItem(value: 'excellent', child: Text('Excellent')),
               DropdownMenuItem(value: 'good', child: Text('Good')),
@@ -79,8 +80,9 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
           const SizedBox(height: 8),
           cats.when(
             data: (list) => DropdownButtonFormField<int>(
-              value: _categoryId,
               hint: const Text('Category'),
+              // ignore: deprecated_member_use
+              value: _categoryId,
               items: list.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
               onChanged: (v) => setState(() => _categoryId = v),
             ),

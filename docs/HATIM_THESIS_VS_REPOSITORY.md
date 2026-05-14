@@ -7,8 +7,8 @@ This document maps your dissertation text to **what is implemented in GitHub tod
 | Thesis claim | Repository status |
 |--------------|-------------------|
 | Flutter cross‑platform client | **Yes** — `frontend/` |
-| Hybrid AI (edge vision + cloud reasoning) | **Partial** — **Online:** Django runs **vision + LLM** on the **uploaded** listing image (same outcome as “cloud brain”, different data path than the thesis figure where the phone sends a **pre-computed TFLite score**). **Offline / server error:** Flutter runs **optional TFLite** on the local gallery image, then **local depreciation** pricing (see `HybridAiOrchestrator`). |
-| Firebase / Firestore / Cloud Functions | **Not the primary stack** — persistence and auth are **Django + SQLite** (dev). See `docs/FIREBASE_MIGRATION.md` for how to move toward the thesis stack. |
+| Hybrid AI (edge vision + cloud reasoning) | **Implemented (online):** Flutter resolves **device “Eye”** (TFLite asset when present, else declared-condition heuristic), then calls Django **`POST …/analyze-with-device-visual/`** so OpenAI/Gemini receive **text + scores only** (no raw pixels to the LLM), matching Ch.3.3–3.5. **Offline / server error:** same edge stack + **local depreciation** fallback. Legacy `analyze-with-ai` (server vision on stored image) remains for admin/testing. |
+| Firebase / Firestore / Cloud Functions | **Scaffolded + partial runtime:** `firebase.json`, `firestore.rules`, `functions/` (Callable OpenAI proxy), Flutter optional **`FirebaseBootstrap`** + **`cached_ai_results`** writes. **Primary** marketplace persistence remains **Django + SQLite** until you finish migration (`docs/FIREBASE_MIGRATION.md`). |
 | FastAPI gateway | **Optional dev component** — `gateway/` is a small FastAPI service that can proxy OpenAI keys (thesis “hide keys from client” pattern). Production still uses Django as the main API. |
 | OpenAI GPT‑4o JSON reasoning | **Supported on server** — set `OPENAI_API_KEY` (+ model env). Flutter does **not** call OpenAI directly (keys stay off the device). |
 | Tables 4–5 / SUS 86 / 83.4% / MAE $4.50 etc. | **Not auto‑reproduced by this repo** — those numbers require **your** experiments, datasets, and devices. The code provides **hooks** and **evaluation placeholders**; it does not hard‑code empirical thesis results. |
@@ -22,7 +22,7 @@ This document maps your dissertation text to **what is implemented in GitHub tod
 
 ### Ch.3 System design (Firebase, FastAPI, latency‑first gate)
 
-- **Firebase / Firestore:** described in thesis as primary — **not** implemented as primary here. **Django** is the source of truth for listings, auth (JWT), and AI audit rows.
+- **Firebase / Firestore / Functions:** thesis-primary storage — **Django** still owns listings/users in this repo, but **Firebase artifacts exist** (rules, Callable `chatJson`, Flutter Firestore AI cache) so the architecture in the report is **implemented as code**, not only prose.
 - **Latency‑first gate:** implemented in Flutter as **`HybridAiOrchestrator`** (`frontend/lib/core/hybrid_ai/`): reachability probe → try Django `analyze-with-ai` → on failure or offline, **local fallback** map (mirrors server depreciation fallback conceptually).
 - **FastAPI:** provided as **`gateway/`** for OpenAI proxy experiments; not required to run the Flutter app against Django.
 
@@ -41,7 +41,7 @@ This document maps your dissertation text to **what is implemented in GitHub tod
 
 ## What you should tell the examiner (one sentence)
 
-> “The submitted codebase implements the **same hybrid decision pattern** and **cloud GPT‑style reasoning with server‑held keys**; the thesis also describes **Firebase and on‑device TFLite** as the target production shape — those are **partially scaffolded** (`gateway/`, TFLite asset hook, migration doc) while the **working prototype** runs on **Django + Flutter**.”
+> “The submitted codebase implements the **latency-first hybrid pattern** (on-device visual scores, then **text-only** cloud GPT reasoning), **server-held OpenAI keys**, **Firebase rules + Callable Functions + Firestore AI cache scaffolding**, and an optional **FastAPI** gateway — while **listing persistence** for the working demo still uses **Django + SQLite** until Firebase migration is completed.”
 
 ## Appendix A
 

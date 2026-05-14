@@ -21,6 +21,20 @@ class ProductImageSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "uploaded_at")
 
 
+class DeviceVisualInputSerializer(serializers.Serializer):
+    """Thesis Ch.3–4: sanitized edge outputs sent to the cloud reasoning engine."""
+
+    device_condition_label = serializers.ChoiceField(choices=["excellent", "good", "fair", "poor"])
+    device_condition_score = serializers.IntegerField(min_value=0, max_value=100)
+    device_model_note = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=240,
+        default="",
+        help_text="e.g. MobileNetV2 INT8 TFLite",
+    )
+
+
 class ProductPublicSerializer(serializers.ModelSerializer):
     seller = SellerMiniSerializer(read_only=True)
     category = CategorySerializer(read_only=True)

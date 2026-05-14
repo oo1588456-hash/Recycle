@@ -72,3 +72,81 @@ Rules:
 
 def build_prompt_dict(product: ProductListing, dataset_baseline_summary: str) -> dict[str, Any]:
     return {"text": build_analysis_prompt(product, dataset_baseline_summary)}
+
+
+def build_analysis_prompt_with_device_visual(
+    product: ProductListing,
+    dataset_baseline_summary: str,
+    *,
+    device_condition_label: str,
+    device_condition_score: int,
+    device_model_note: str = "",
+) -> str:
+    """
+    Thesis Ch.3.3–3.5: cloud "Brain" reasons over **sanitized** on-device visual outputs.
+    Raw listing images are not sent to the LLM — only the edge condition label/score + metadata.
+    """
+    p = product
+    cur = getattr(settings, "DEFAULT_CURRENCY", "GBP")
+    note = device_model_note.strip() or "On-device quantized CNN (TensorFlow Lite / MobileNet-style)"
+    return f"""You are an AI resale product evaluator for a second-hand e-commerce marketplace.
+
+The mobile client has already run **on-device visual inference** ({note}).
+Use the following **device visual assessment** as the primary objective signal for physical condition
+(do not contradict it unless metadata clearly indicates a listing error; if so, add a warning):
+
+Device visual condition label: {device_condition_label}
+Device visual condition score (0–100): {device_condition_score}
+
+Product details:
+Title: {p.title}
+Category: {p.category.name if p.category else ""}
+Brand: {p.brand}
+Model: {p.model_name}
+Original Price: {p.original_price} {cur}
+Age: {p.product_age_months or "unknown"} months
+Usage Duration: {p.usage_duration_months or "unknown"} months
+Seller Declared Condition: {p.user_declared_condition}
+Description: {p.description}
+
+Extra specs:
+Storage: {p.storage}
+RAM: {p.ram}
+Battery Health: {p.battery_health}
+Screen Condition: {p.screen_condition}
+Body Condition: {p.body_condition}
+Warranty Status: {p.warranty_status}
+Accessories Included: {p.accessories_included}
+Box Available: {p.box_available}
+
+Dataset baseline:
+{dataset_baseline_summary}
+
+Return only valid JSON with this structure:
+
+{{
+  "condition_label": "excellent | good | fair | poor",
+  "condition_score": 0,
+  "suggested_price_min": 0,
+  "suggested_price_avg": 0,
+  "suggested_price_max": 0,
+  "currency": "{cur}",
+  "confidence_score": 0,
+  "explanation": "clear explanation for seller and buyer",
+  "price_factors": [
+    "factor 1",
+    "factor 2"
+  ],
+  "warnings": [
+    "warning if any"
+  ]
+}}
+
+Rules:
+- Set condition_label and condition_score to be **consistent** with the device visual assessment above
+  (they may refine slightly but must not ignore it).
+- Be realistic for a second-hand marketplace.
+- Suggested min must be less than avg; max must be greater than avg.
+- Consider age, usage, brand, original price, accessories, and market baseline.
+- Return JSON only. No markdown.
+"""

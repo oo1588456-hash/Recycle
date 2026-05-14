@@ -1,13 +1,18 @@
-from pathlib import Path
-
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from apps.ai_engine.services.price_analysis_service import analyze_listing
+from apps.ai_engine.services.price_analysis_service import (
+    analyze_listing,
+    analyze_listing_with_device_visual,
+)
 from apps.common.permissions import IsNotBlocked, IsSeller, IsSellerOwner
 from apps.products.models import ProductImage, ProductListing
-from apps.products.serializers import ProductImageSerializer, SellerProductSerializer
+from apps.products.serializers import (
+    DeviceVisualInputSerializer,
+    ProductImageSerializer,
+    SellerProductSerializer,
+)
 
 
 class SellerProductViewSet(viewsets.ModelViewSet):
@@ -45,6 +50,25 @@ class SellerProductViewSet(viewsets.ModelViewSet):
     def analyze_with_ai(self, request, pk=None):
         product = self.get_object()
         result = analyze_listing(product=product, seller=request.user, image_path=None)
+        return Response(result)
+
+    @action(detail=True, methods=["post"], url_path="analyze-with-device-visual")
+    def analyze_with_device_visual(self, request, pk=None):
+        """
+        Thesis hybrid path: client runs TFLite / edge CNN first, then cloud LLM reasons on
+        sanitized scores + metadata (no raw image bytes sent to OpenAI/Gemini).
+        """
+        product = self.get_object()
+        ser = DeviceVisualInputSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        vd = ser.validated_data
+        result = analyze_listing_with_device_visual(
+            product=product,
+            seller=request.user,
+            device_condition_label=vd["device_condition_label"],
+            device_condition_score=vd["device_condition_score"],
+            device_model_note=vd.get("device_model_note") or "",
+        )
         return Response(result)
 
     @action(detail=True, methods=["post"], url_path="accept-ai-price")

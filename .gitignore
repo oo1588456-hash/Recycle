@@ -39,3 +39,13 @@ yarn-error.log*
 *.swp
 .DS_Store
 Thumbs.db
+
+# Local editor & agent metadata (never commit)
+.cursor/
+.cursorrules
+.cursorignore
+
+# Local dissertation / binary copies (do not commit)
+*.docx
+~$*.docx
+

@@ -1,10 +1,12 @@
 import 'package:dio/dio.dart';
 
+import '../firebase/ai_cache_firestore.dart';
 import 'connectivity_probe.dart';
+import 'device_visual_assessment.dart';
 import 'local_pricing_fallback.dart';
 import 'tflite_condition_service.dart';
 
-/// Thesis Ch.3.3 — try cloud (Django vision + LLM), else local TFLite + depreciation fallback.
+/// Thesis Ch.3.3 — latency-first: edge "Eye" then cloud "Brain" (text-only to OpenAI/Gemini on server).
 class HybridAiOrchestrator {
   static Future<Map<String, dynamic>> runSellerAnalyze({
     required Dio dio,
@@ -19,12 +21,24 @@ class HybridAiOrchestrator {
     final online = await shouldAttemptCloud();
     if (online) {
       try {
-        final r = await dio.post<Map<String, dynamic>>('/seller/products/$productId/analyze-with-ai/');
+        final device = await DeviceVisualAssessment.resolve(
+          declaredCondition: declaredCondition,
+          imagePath: imagePath,
+        );
+        final r = await dio.post<Map<String, dynamic>>(
+          '/seller/products/$productId/analyze-with-device-visual/',
+          data: {
+            'device_condition_label': device.label,
+            'device_condition_score': device.score,
+            'device_model_note': device.modelNote,
+          },
+        );
         final data = Map<String, dynamic>.from(r.data ?? {});
-        data['hybrid_path'] = 'cloud_django';
+        data['hybrid_path'] = data['hybrid_path'] ?? 'edge_tflite_then_cloud_gpt_text_only';
+        await AiCacheFirestore.writeCachedAnalysis(productId: productId, payload: data);
         return data;
       } on DioException {
-        // fall through to local / hybrid edge
+        // fall through to offline edge stack
       }
     }
 
