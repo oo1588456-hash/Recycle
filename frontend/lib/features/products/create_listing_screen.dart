@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/config/api_config.dart';
+import '../../core/hybrid_ai/hybrid_ai_orchestrator.dart';
 import '../../core/network/dio_client.dart';
 import '../../shared/widgets/app_button.dart';
 import '../../shared/widgets/app_text_field.dart';
@@ -105,8 +107,10 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
             const Divider(),
             Text('AI score: ${_ai!['condition_score']} (${_ai!['condition_label']})'),
             Text(
-              'Suggested: ${_ai!['suggested_price_min']} – ${_ai!['suggested_price_avg']} – ${_ai!['suggested_price_max']} PKR',
+              'Suggested: ${_ai!['suggested_price_min']} – ${_ai!['suggested_price_avg']} – ${_ai!['suggested_price_max']} ${ApiConfig.defaultCurrency}',
             ),
+            if (_ai?['hybrid_path'] != null)
+              Text('Hybrid path: ${_ai!['hybrid_path']}', style: Theme.of(context).textTheme.labelSmall),
             if ((_ai!['warnings'] as List?)?.isNotEmpty == true)
               Text('Warnings: ${_ai!['warnings']}', style: TextStyle(color: Colors.orange.shade800)),
             Text(_ai!['explanation'] as String? ?? ''),
@@ -136,7 +140,7 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
                           'model_name': _model.text,
                           'original_price': _orig.text,
                           'final_price': _orig.text,
-                          'currency': 'PKR',
+                          'currency': ApiConfig.defaultCurrency,
                           'product_age_months': int.tryParse(_age.text) ?? 0,
                           'usage_duration_months': int.tryParse(_usage.text) ?? 0,
                           'user_declared_condition': _cond,
@@ -154,8 +158,16 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
                         }
                         setState(() {});
                       } else {
-                        final r = await dio.post('/seller/products/$_productId/analyze-with-ai/');
-                        final map = r.data as Map<String, dynamic>;
+                        final map = await HybridAiOrchestrator.runSellerAnalyze(
+                          dio: dio,
+                          productId: _productId!,
+                          originalPrice: double.tryParse(_orig.text) ?? 1,
+                          declaredCondition: _cond,
+                          ageMonths: int.tryParse(_age.text) ?? 0,
+                          usageMonths: int.tryParse(_usage.text) ?? 0,
+                          imagePath: _image?.path,
+                          currency: ApiConfig.defaultCurrency,
+                        );
                         setState(() {
                           _ai = map;
                           _customFinalPrice.text = map['suggested_price_avg']?.toString() ?? '';
@@ -183,7 +195,7 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
             ),
             AppTextField(
               controller: _customFinalPrice,
-              label: 'Custom final price (PKR)',
+              label: 'Custom final price (${ApiConfig.defaultCurrency})',
               keyboardType: TextInputType.number,
             ),
             AppButton(

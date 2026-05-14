@@ -7,15 +7,18 @@ ReCycle is an **AI-assisted marketplace** for used goods: a **Flutter** mobile c
 | Report / thesis theme | This repository (v1) |
 |----------------------|----------------------|
 | Firebase / Firestore | Django models + SQLite (dev); no Firebase in v1 |
-| FastAPI microservice | Django + DRF only |
+| FastAPI microservice | **Optional** dev gateway in `gateway/` (OpenAI JSON proxy). Main API remains **Django + DRF**. |
 | GPT-4o cloud reasoning | **Supported:** `OPENAI_API_KEY` + `apps/ai_engine/services/openai_service.py` (JSON + vision); optional Gemini |
-| On-device TFLite / MobileNet | **Not shipped** in v1 (see `backend/docs/AI_ENGINE_REPORT.md` roadmap) |
-| Evaluation metrics in prose | Benchmarks in the dissertation are targets; reproduce with your own runs on this stack |
+| On-device TFLite / MobileNet | **Flutter hook:** `lib/core/hybrid_ai/` + `assets/models/condition_mobilenetv2_int8.tflite` (you train/export — see `frontend/assets/models/README.md`, `backend/ml/README.md`). Offline path uses **local depreciation** matching Django fallback. |
+| Evaluation metrics in prose | Tables 4–5 / SUS / MAE in the thesis are **your empirical results**; they are **not** hard-coded. Re-run benchmarks on devices/emulators after wiring TFLite. |
+
+**Full chapter mapping (Hatim dissertation text):** `docs/HATIM_THESIS_VS_REPOSITORY.md`  
+**Firebase migration (thesis Ch.3.6):** `docs/FIREBASE_MIGRATION.md`
 
 ## Architecture
 
 - **Backend** (`backend/`): Django 5 + DRF + SimpleJWT + SQLite (dev) + drf-spectacular. Default dev URL **`http://127.0.0.1:8005`**. API base: **`/api/v1/`**. Media: `backend/media/products/`.
-- **Frontend** (`frontend/`): Flutter (Riverpod + Dio + secure storage + image picker). Default API base is **`http://10.0.2.2:8005/api/v1`** for the Android emulator (see `lib/core/config/api_config.dart`).
+- **Frontend** (`frontend/`): Flutter (Riverpod + Dio + secure storage + image picker). Implements a **thesis-style latency-first hybrid path** (`lib/core/hybrid_ai/`): try Django `analyze-with-ai` when online; on failure/offline run optional **TFLite** on the picked image plus the same **local depreciation** rules as the server fallback. Default API base is **`http://10.0.2.2:8005/api/v1`** for the Android emulator (see `lib/core/config/api_config.dart`). Listing currency default: **`GBP`** (`ApiConfig.defaultCurrency`).
 - **Web** (`frontend_web/`): Next.js 14+ app. If `NEXT_PUBLIC_API_URL` is unset, the browser calls same-origin **`/api/v1`** and **`/media`**, proxied to Django via `next.config.mjs` rewrites (`BACKEND_ORIGIN`, default `http://127.0.0.1:8005`). SSR uses **`INTERNAL_API_URL`** (see `frontend_web/.env.example`).
 - **Datasets** (`datasets/` at repo root): scanned by `scripts/scan_datasets.py`; baselines built by `scripts/build_price_baseline.py`. Optional listings with real images: `python manage.py seed_listings_from_datasets --limit=40`.
 

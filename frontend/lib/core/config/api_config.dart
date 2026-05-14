@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 
 class ApiConfig {
+  static const String defaultCurrency = 'GBP';
+
   static const String androidEmulatorBaseUrl = 'http://10.0.2.2:8005/api/v1';
   static const String localBaseUrl = 'http://localhost:8005/api/v1';
   static const String physicalDeviceBaseUrl = 'http://YOUR_LOCAL_IP:8005/api/v1';
